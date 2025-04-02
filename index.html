@@ -81,7 +81,7 @@
         // Build the deep link URLs with both formats to increase compatibility
         let deepLinkUri = 'com.anonymous.BadmintonDanmark://?court=' + (courtParam || '');
         let universalLink = 'https://yourdomain.com/app/redirect?court=' + (courtParam || '');
-        let intentUri = 'intent://badmintondanmark/#Intent;scheme=com.anonymous.BadmintonDanmark;package=com.anonymous.BadmintonDanmark;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.anonymous.BadmintonDanmark;S.court=' + (courtParam || '') + ';end';
+        let intentUri = 'intent://?court=' + (courtParam || '') + '#Intent;scheme=com.anonymous.BadmintonDanmark;package=com.anonymous.BadmintonDanmark;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.anonymous.BadmintonDanmark;end';
         
         // Set the app store URLs
         const iosAppStoreURL = 'https://apps.apple.com/app/id6743437409';
@@ -125,16 +125,10 @@
                 // For iOS, we use a timer-based approach
                 const now = Date.now();
                 
-                // Try Universal Links first if available (requires setup on your end)
-                try {
-                    window.location = universalLink;
-                } catch (e) {
-                    // Fallback to URI scheme via iframe
-                    const iframe = document.createElement('iframe');
+                 const iframe = document.createElement('iframe');
                     iframe.style.display = 'none';
                     iframe.src = deepLinkUri;
                     document.body.appendChild(iframe);
-                }
                 
                 // Set timeout to check if we're still here after 2 seconds
                 setTimeout(function() {
