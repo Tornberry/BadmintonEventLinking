@@ -134,7 +134,7 @@
                 }, 2000);
             } else if (isAndroid) {
                 // For Android, try the deep link first
-                window.location.href = deepLinkUri;
+                window.location.href = intentUri;
                 
                 // If that fails, try the intent URL after a short delay
                 setTimeout(function() {
