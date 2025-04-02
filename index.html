@@ -79,7 +79,7 @@
         let courtParam = urlParams.get('court');
         
         // Build the deep link URL
-        let deepLink = 'badmintonevent://';
+        let deepLink = 'com.anonymous.BadmintonDanmark://?court=';
         if (courtParam) {
             deepLink += `court=${courtParam}`;
         }
