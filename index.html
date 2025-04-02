@@ -136,17 +136,17 @@
                 alert('Is android)
                 
                 // For Android, try the deep link first
-                window.location.href = intentUri;
+                window.location.href = deepLinkUri;
                 
                 // If that fails, try the intent URL after a short delay
-                //setTimeout(function() {
-                //    window.location.href = intentUri;
-                //}, 1000);
+                setTimeout(function() {
+                    window.location.href = intentUri;
+                }, 1000);
                 
                 // Finally, fall back to the Play Store after a longer delay
-                //setTimeout(function() {
-                 //   window.location.href = androidPlayStoreURL;
-                //}, 3000);
+                setTimeout(function() {
+                    window.location.href = androidPlayStoreURL;
+                }, 3000);
             } else {
                 // For other platforms, try the basic URI scheme
                 try {
