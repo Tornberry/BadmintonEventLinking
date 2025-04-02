@@ -78,44 +78,73 @@
         const urlParams = new URLSearchParams(window.location.search);
         let courtParam = urlParams.get('court');
         
-        // Build the deep link URL
-        let deepLink = 'com.anonymous.BadmintonDanmark://?court=';
-        if (courtParam) {
-            deepLink += courtParam;
-        }
+        // Build the deep link URLs with both formats to increase compatibility
+        let deepLinkUri = 'com.anonymous.BadmintonDanmark://?court=' + (courtParam || '');
+        let intentUri = 'intent://badmintondanmark/#Intent;scheme=com.anonymous.BadmintonDanmark;package=com.anonymous.BadmintonDanmark;S.court=' + (courtParam || '') + ';end';
         
-        // Set the app store URLs (replace with your actual app store URLs)
+        // Set the app store URLs
         const iosAppStoreURL = 'https://apps.apple.com/app/id6743437409';
         const androidPlayStoreURL = 'https://play.google.com/store/apps/details?id=com.anonymous.BadmintonDanmark';
         
-        // Update button URLs
-        document.getElementById('open-app').href = deepLink;
+        // Detect platform
+        const isAndroid = /android/i.test(navigator.userAgent);
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         
-        // Detect platform and set appropriate store URL
+        // Set appropriate store URL and deep link based on platform
         let storeURL = iosAppStoreURL; // Default to iOS
-        if (/android/i.test(navigator.userAgent)) {
+        let preferredDeepLink = deepLinkUri; // Default URI scheme
+        
+        if (isAndroid) {
             storeURL = androidPlayStoreURL;
+            preferredDeepLink = intentUri; // Use Android intent format for better compatibility
         }
+        
+        // Update button URLs
+        document.getElementById('open-app').href = preferredDeepLink;
         document.getElementById('app-store').href = storeURL;
         
         // Function to detect if redirect failed and go to app store
         function openApp() {
-            // Record the current time
-            const startTime = Date.now();
-            
-            // Try to open the app
-            window.location.href = deepLink;
-            
-            // Set a timeout to check if we're still on this page
-            setTimeout(function() {
-                const timeElapsed = Date.now() - startTime;
+            // Different approach based on platform
+            if (isIOS) {
+                // For iOS, we use a timer-based approach
+                const now = Date.now();
                 
-                // If we're still here after a short delay, the app probably isn't installed
-                // (iOS typically takes 2-3 seconds to switch apps)
-                if (timeElapsed < 3000) {
+                // Create hidden iframe to try opening the app
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = deepLinkUri;
+                document.body.appendChild(iframe);
+                
+                // Set timeout to check if we're still here after 2 seconds
+                setTimeout(function() {
+                    const timeElapsed = Date.now() - now;
+                    if (timeElapsed < 2000) {
+                        // If we're still here, app likely not installed
+                        window.location.href = iosAppStoreURL;
+                    }
+                }, 1500);
+            } else if (isAndroid) {
+                // For Android, we can use the Intent URL format
+                window.location.href = intentUri;
+                
+                // Fallback after a delay
+                setTimeout(function() {
+                    window.location.href = androidPlayStoreURL;
+                }, 2500);
+            } else {
+                // For other platforms, try the basic URI scheme
+                try {
+                    window.location.href = deepLinkUri;
+                    // Fallback after a delay
+                    setTimeout(function() {
+                        window.location.href = storeURL;
+                    }, 2500);
+                } catch (e) {
+                    // If there's an error, go to store
                     window.location.href = storeURL;
                 }
-            }, 1500); // Wait 1.5 seconds before redirecting
+            }
         }
         
         // Start the redirect process when the page loads
