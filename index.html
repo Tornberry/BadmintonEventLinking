@@ -77,7 +77,6 @@
         <a href="#" id="app-store">Download App</a>
     </div>
 
-    <!-- This auto-clicks the open app button when page loads for Chrome on Android -->
     <script>
         // Get URL parameters
         const urlParams = new URLSearchParams(window.location.search);
@@ -85,8 +84,11 @@
         
         // Build the deep link URLs with both formats to increase compatibility
         let deepLinkUri = 'com.anonymous.BadmintonDanmark://?court=' + (courtParam || '');
-        let universalLink = 'https://yourdomain.com/app/redirect?court=' + (courtParam || '');
-        let intentUri = 'intent://?court=' + (courtParam || '') + '#Intent;scheme=com.anonymous.BadmintonDanmark;package=com.anonymous.BadmintonDanmark;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.anonymous.BadmintonDanmark;end';
+        let intentUri = 'intent://?court=' + (courtParam || '') + 
+            '#Intent;scheme=com.anonymous.BadmintonDanmark;' +
+            'package=com.anonymous.BadmintonDanmark;' +
+            'S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.anonymous.BadmintonDanmark;' +
+            'end';
         
         // Set the app store URLs
         const iosAppStoreURL = 'https://apps.apple.com/app/id6743437409';
@@ -95,7 +97,6 @@
         // Detect platform
         const isAndroid = /android/i.test(navigator.userAgent);
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        const isChromeOnAndroid = isAndroid && /chrome/i.test(navigator.userAgent);
         
         // Set appropriate store URL and deep link based on platform
         let storeURL = iosAppStoreURL; // Default to iOS
@@ -103,26 +104,21 @@
         
         if (isAndroid) {
             storeURL = androidPlayStoreURL;
-            preferredDeepLink = intentUri; // Use Android intent format for better compatibility
+            preferredDeepLink = intentUri; // Use Android intent format
         }
         
         // Update button URLs
         document.getElementById('open-app').href = preferredDeepLink;
         document.getElementById('app-store').href = storeURL;
         
-        // For Chrome on Android, we need to use a direct link in the href attribute
-        if (isChromeOnAndroid) {
-            document.getElementById('open-app').href = intentUri;
-        }
-        
         // Function to detect if redirect failed and go to app store
         function openApp() {
             // Different approach based on platform
             if (isIOS) {
-                // For iOS, we use a timer-based approach
+                // For iOS, we use a timer-based approach with multiple attempts
                 const now = Date.now();
                 
-                // Create hidden iframe to try opening the app
+                // First try with a hidden iframe
                 const iframe = document.createElement('iframe');
                 iframe.style.display = 'none';
                 iframe.src = deepLinkUri;
@@ -131,27 +127,33 @@
                 // Set timeout to check if we're still here after 2 seconds
                 setTimeout(function() {
                     const timeElapsed = Date.now() - now;
-                    if (timeElapsed < 2000) {
+                    if (timeElapsed < 2500) {
                         // If we're still here, app likely not installed
                         window.location.href = iosAppStoreURL;
                     }
-                }, 1500);
+                }, 2000);
             } else if (isAndroid) {
-                // For Android (but not Chrome), we can use the Intent URL format
-                window.location.href = intentUri;
+                // For Android, try the deep link first
+                window.location.href = deepLinkUri;
                 
-                // Fallback after a delay
+                // If that fails, try the intent URL after a short delay
+                setTimeout(function() {
+                    window.location.href = intentUri;
+                }, 1000);
+                
+                // Finally, fall back to the Play Store after a longer delay
                 setTimeout(function() {
                     window.location.href = androidPlayStoreURL;
-                }, 2500);
+                }, 3000);
             } else {
                 // For other platforms, try the basic URI scheme
                 try {
                     window.location.href = deepLinkUri;
+                    
                     // Fallback after a delay
                     setTimeout(function() {
                         window.location.href = storeURL;
-                    }, 2500);
+                    }, 3000);
                 } catch (e) {
                     // If there's an error, go to store
                     window.location.href = storeURL;
@@ -161,25 +163,16 @@
         
         // Set up event listener for manual button clicks
         document.getElementById('open-app').addEventListener('click', function(e) {
-            // For Chrome on Android, let the href attribute handle it
-            if (!isChromeOnAndroid) {
-                e.preventDefault();
-                openApp();
-            }
+            e.preventDefault();
+            openApp();
         });
         
-        // Function to automatically trigger the app opening when page loads
+        // Start the redirect process when the page loads
         window.onload = function() {
-            // For Chrome on Android, programmatically click the button
-            if (isChromeOnAndroid) {
-                // Short delay to ensure everything is ready
-                setTimeout(function() {
-                    document.getElementById('open-app').click();
-                }, 100);
-            } else {
-                // For other browsers, use the JavaScript approach
+            // Use a short delay to ensure the page has fully loaded
+            setTimeout(function() {
                 openApp();
-            }
+            }, 300);
         };
     </script>
 </body>
