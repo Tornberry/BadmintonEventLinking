@@ -20,7 +20,7 @@
         .logo {
             width: 120px;
             height: 120px;
-            background-color: #4CAF50;
+            background-color: #F12E48;
             border-radius: 20px;
             display: flex;
             align-items: center;
@@ -47,7 +47,7 @@
             display: inline-block;
             margin: 0 10px;
             padding: 10px 20px;
-            background-color: #4CAF50;
+            background-color: #F12E48;
             color: white;
             text-decoration: none;
             border-radius: 5px;
@@ -80,7 +80,8 @@
         
         // Build the deep link URLs with both formats to increase compatibility
         let deepLinkUri = 'com.anonymous.BadmintonDanmark://?court=' + (courtParam || '');
-        let intentUri = 'intent://badmintondanmark/#Intent;scheme=com.anonymous.BadmintonDanmark;package=com.anonymous.BadmintonDanmark;S.court=' + (courtParam || '') + ';end';
+        let universalLink = 'https://yourdomain.com/app/redirect?court=' + (courtParam || '');
+        let intentUri = 'intent://badmintondanmark/#Intent;scheme=com.anonymous.BadmintonDanmark;package=com.anonymous.BadmintonDanmark;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.anonymous.BadmintonDanmark;S.court=' + (courtParam || '') + ';end';
         
         // Set the app store URLs
         const iosAppStoreURL = 'https://apps.apple.com/app/id6743437409';
@@ -89,6 +90,7 @@
         // Detect platform
         const isAndroid = /android/i.test(navigator.userAgent);
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isChromeOnAndroid = isAndroid && /chrome/i.test(navigator.userAgent);
         
         // Set appropriate store URL and deep link based on platform
         let storeURL = iosAppStoreURL; // Default to iOS
@@ -96,25 +98,43 @@
         
         if (isAndroid) {
             storeURL = androidPlayStoreURL;
-            //preferredDeepLink = intentUri; // Use Android intent format for better compatibility
+            preferredDeepLink = intentUri; // Use Android intent format for better compatibility
         }
         
-        // Update button URLs
-        document.getElementById('open-app').href = preferredDeepLink;
+        // Use anchor tags for Android Chrome to avoid the leave site warning
+        if (isChromeOnAndroid) {
+            // Update button to use direct intent format with S.browser_fallback_url
+            document.getElementById('open-app').href = intentUri;
+            document.getElementById('open-app').onclick = null; // Remove the event listener
+        } else {
+            // For other browsers/platforms, use the JavaScript approach
+            document.getElementById('open-app').href = preferredDeepLink;
+        }
+        
         document.getElementById('app-store').href = storeURL;
         
         // Function to detect if redirect failed and go to app store
         function openApp() {
+            // Don't run the JS redirect for Chrome on Android (use the anchor tag instead)
+            if (isChromeOnAndroid) {
+                return; // Let the anchor tag handle it
+            }
+            
             // Different approach based on platform
             if (isIOS) {
                 // For iOS, we use a timer-based approach
                 const now = Date.now();
                 
-                // Create hidden iframe to try opening the app
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.src = deepLinkUri;
-                document.body.appendChild(iframe);
+                // Try Universal Links first if available (requires setup on your end)
+                try {
+                    window.location = universalLink;
+                } catch (e) {
+                    // Fallback to URI scheme via iframe
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.src = deepLinkUri;
+                    document.body.appendChild(iframe);
+                }
                 
                 // Set timeout to check if we're still here after 2 seconds
                 setTimeout(function() {
@@ -124,8 +144,8 @@
                         window.location.href = iosAppStoreURL;
                     }
                 }, 1500);
-            } else if (isAndroid) {
-                // For Android, we can use the Intent URL format
+            } else if (isAndroid && !isChromeOnAndroid) {
+                // For Android (but not Chrome), we can use the Intent URL format
                 window.location.href = intentUri;
                 
                 // Fallback after a delay
@@ -147,14 +167,18 @@
             }
         }
         
-        // Start the redirect process when the page loads
-        window.onload = openApp;
+        // Start the redirect process when the page loads, but not on Chrome Android
+        if (!isChromeOnAndroid) {
+            window.onload = openApp;
+        }
         
-        // Also trigger it when the "Open App" button is clicked
-        document.getElementById('open-app').addEventListener('click', function(e) {
-            e.preventDefault();
-            openApp();
-        });
+        // Only use click handler for non-Chrome Android browsers
+        if (!isChromeOnAndroid) {
+            document.getElementById('open-app').addEventListener('click', function(e) {
+                e.preventDefault();
+                openApp();
+            });
+        }
     </script>
 </body>
 </html>
